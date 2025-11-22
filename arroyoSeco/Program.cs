@@ -205,7 +205,15 @@ app.Use(async (ctx, next) =>
 });
 
 // Crear carpeta y servir archivos
-var comprobantesPath = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value.ComprobantesPath;
+var storageOptions = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value;
+var comprobantesPath = storageOptions.ComprobantesPath;
+
+// En producción, usar una ruta temporal si no está configurada o no es absoluta
+if (string.IsNullOrEmpty(comprobantesPath) || !Path.IsPathRooted(comprobantesPath))
+{
+    comprobantesPath = Path.Combine(Path.GetTempPath(), "arroyoseco-comprobantes");
+}
+
 Directory.CreateDirectory(comprobantesPath);
 app.UseStaticFiles(new StaticFileOptions
 {
