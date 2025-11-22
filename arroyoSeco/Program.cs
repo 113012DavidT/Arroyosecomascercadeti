@@ -27,11 +27,20 @@ builder.WebHost.ConfigureKestrel(o =>
     o.Limits.MaxRequestBodySize = 50_000_000;
 });
 
-builder.WebHost.UseKestrel(o =>
+// En producción Railway usa la variable PORT, en desarrollo usa HTTPS
+if (builder.Environment.IsProduction())
 {
-    o.ListenLocalhost(7190, lo => lo.UseHttps()); // solo puerto seguro
-    // quita el puerto HTTP
-});
+    // Railway asigna el puerto automáticamente
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+else
+{
+    builder.WebHost.UseKestrel(o =>
+    {
+        o.ListenLocalhost(7190, lo => lo.UseHttps());
+    });
+}
 
 builder.Services.AddHttpContextAccessor();
 
