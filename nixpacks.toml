@@ -1,11 +1,14 @@
+[providers]
+dotnet = "8"
+
 [phases.setup]
 nixPkgs = ["dotnet-sdk_8"]
 
 [phases.build]
 cmds = [
-    "dotnet restore arroyoSeco/arroyoSeco.API.csproj",
-    "dotnet publish arroyoSeco/arroyoSeco.API.csproj -c Release -o out"
+    "dotnet restore arroyoSeco.sln",
+    "dotnet publish arroyoSeco/arroyoSeco.API.csproj -c Release -o /app/out"
 ]
 
 [start]
-cmd = "dotnet out/arroyoSeco.API.dll"
+cmd = "cd /app/out && dotnet arroyoSeco.API.dll"
