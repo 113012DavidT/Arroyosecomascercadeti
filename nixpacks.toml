@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["dotnet-sdk_8"]
+
+[phases.build]
+cmds = [
+    "dotnet restore arroyoSeco/arroyoSeco.API.csproj",
+    "dotnet publish arroyoSeco/arroyoSeco.API.csproj -c Release -o out"
+]
+
+[start]
+cmd = "dotnet out/arroyoSeco.API.dll"
