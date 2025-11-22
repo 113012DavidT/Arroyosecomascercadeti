@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "dotnet publish arroyoSeco/arroyoSeco.API.csproj -c Release -o /app/out"
+
+[deploy]
+startCommand = "cd /app/out && dotnet arroyoSeco.API.dll"
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 10
