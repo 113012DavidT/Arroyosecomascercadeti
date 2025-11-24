@@ -252,6 +252,26 @@ app.MapGet("/health", () => Results.Ok("OK"));
 
 app.MapControllers();
 
+// Aplicar migraciones automáticamente en producción
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var appDbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var authDbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+        
+        Console.WriteLine("=== Applying database migrations...");
+        appDbContext.Database.Migrate();
+        authDbContext.Database.Migrate();
+        Console.WriteLine("=== Migrations applied successfully");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"=== Error applying migrations: {ex.Message}");
+        throw;
+    }
+}
+
 // Crear roles si no existen
 using (var scope = app.Services.CreateScope())
 {
