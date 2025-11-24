@@ -9,7 +9,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        // Carga configuración (appsettings.* del proyecto API si se ejecuta desde raíz)
+        // Carga configuraciï¿½n (appsettings.* del proyecto API si se ejecuta desde raï¿½z)
         var basePath = Directory.GetCurrentDirectory();
         var builderConfig = new ConfigurationBuilder()
             .SetBasePath(basePath)
@@ -19,10 +19,10 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
         var configuration = builderConfig.Build();
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Server=localhost;Database=arroyoSeco;User=root;Password=;";
+            ?? "Host=localhost;Database=arroyoSeco;Username=postgres;Password=;";
         
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        optionsBuilder.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)));
+        optionsBuilder.UseNpgsql(connectionString);
         return new AppDbContext(optionsBuilder.Options);
     }
 }

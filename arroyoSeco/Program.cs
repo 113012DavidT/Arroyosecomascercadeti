@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.FileProviders;
 using System.Text;
@@ -78,17 +79,15 @@ builder.Services.AddCors(p =>
 });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(
+    options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 36)),
-        mySql => mySql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery) // <- va dentro del delegate del provider
+        npgsql => npgsql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
     )
     .EnableSensitiveDataLogging()
 );
 
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 36))));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services
     .AddIdentityCore<IdentityUser>(opt =>
