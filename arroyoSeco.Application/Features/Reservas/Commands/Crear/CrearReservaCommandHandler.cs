@@ -21,9 +21,29 @@ public class CrearReservaCommandHandler
 
     public async Task<int> Handle(CrearReservaCommand request, CancellationToken ct = default)
     {
-        // Normalizar fechas a UTC (solo fecha, sin hora)
-        var entrada = DateTime.SpecifyKind(request.FechaEntrada.Date, DateTimeKind.Utc);
-        var salida = DateTime.SpecifyKind(request.FechaSalida.Date, DateTimeKind.Utc);
+        // Las fechas vienen del frontend en hora local de México
+        // Las convertimos a UTC para guardar en PostgreSQL
+        // Si vienen como DateTime local (México UTC-6), ajustamos a UTC
+        var mexicoTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time (Mexico)");
+        
+        DateTime entrada, salida;
+        
+        // Si las fechas vienen como Unspecified, asumimos que son hora de México
+        if (request.FechaEntrada.Kind == DateTimeKind.Unspecified)
+        {
+            // Asumir que son medianoche en México y convertir a UTC
+            var entradaMexico = DateTime.SpecifyKind(request.FechaEntrada.Date, DateTimeKind.Unspecified);
+            var salidaMexico = DateTime.SpecifyKind(request.FechaSalida.Date, DateTimeKind.Unspecified);
+            
+            entrada = TimeZoneInfo.ConvertTimeToUtc(entradaMexico, mexicoTimeZone);
+            salida = TimeZoneInfo.ConvertTimeToUtc(salidaMexico, mexicoTimeZone);
+        }
+        else
+        {
+            // Si ya vienen con Kind especificado, usar directamente
+            entrada = DateTime.SpecifyKind(request.FechaEntrada.Date, DateTimeKind.Utc);
+            salida = DateTime.SpecifyKind(request.FechaSalida.Date, DateTimeKind.Utc);
+        }
 
         if (entrada >= salida)
             throw new InvalidOperationException("Rango de fechas inv�lido");
