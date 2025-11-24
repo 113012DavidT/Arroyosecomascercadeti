@@ -79,13 +79,22 @@ builder.Services.AddCors(p =>
 });
 
 // Obtener connection string desde DATABASE_URL (Render) o ConnectionStrings__DefaultConnection (local)
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+string connectionString;
 
-// DEBUG: Log para ver el valor de la cadena de conexión
-Console.WriteLine($"=== DATABASE_URL value: {Environment.GetEnvironmentVariable("DATABASE_URL") ?? "NULL"}");
-Console.WriteLine($"=== Connection string being used: {connectionString ?? "NULL"}");
-Console.WriteLine($"=== Connection string length: {connectionString?.Length ?? 0}");
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    // Convertir URI de PostgreSQL (formato Render) a connection string de Npgsql
+    var uri = new Uri(databaseUrl);
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]};SSL Mode=Require;Trust Server Certificate=true";
+    Console.WriteLine($"=== Using DATABASE_URL from environment (converted from URI)");
+}
+else
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+        ?? throw new InvalidOperationException("No connection string configured");
+    Console.WriteLine($"=== Using DefaultConnection from appsettings.json");
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
