@@ -86,7 +86,8 @@ if (!string.IsNullOrEmpty(databaseUrl))
 {
     // Convertir URI de PostgreSQL (formato Render) a connection string de Npgsql
     var uri = new Uri(databaseUrl);
-    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]};SSL Mode=Require;Trust Server Certificate=true";
+    var port = uri.Port > 0 ? uri.Port : 5432; // Puerto por defecto de PostgreSQL
+    connectionString = $"Host={uri.Host};Port={port};Database={uri.AbsolutePath.TrimStart('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]};SSL Mode=Require;Trust Server Certificate=true";
     Console.WriteLine($"=== Using DATABASE_URL from environment (converted from URI)");
 }
 else
