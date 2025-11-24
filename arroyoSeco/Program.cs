@@ -71,11 +71,23 @@ const string CorsPolicy = "FrontPolicy";
 builder.Services.AddCors(p =>
 {
     p.AddPolicy(CorsPolicy, policy =>
-        policy
-            .WithOrigins("http://localhost:4200", "https://localhost:4200")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .SetPreflightMaxAge(TimeSpan.FromMinutes(10)));
+    {
+        // En producción, permitir cualquier origen (luego restringir al dominio del frontend)
+        if (builder.Environment.IsProduction())
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        else
+        {
+            // En desarrollo, solo localhost:4200
+            policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+        }
+    });
 });
 
 // Obtener connection string desde DATABASE_URL (Render) o ConnectionStrings__DefaultConnection (local)
