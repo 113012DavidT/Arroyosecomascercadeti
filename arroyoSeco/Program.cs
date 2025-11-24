@@ -72,12 +72,13 @@ builder.Services.AddCors(p =>
 {
     p.AddPolicy(CorsPolicy, policy =>
     {
-        // En producción, permitir cualquier origen (luego restringir al dominio del frontend)
+        // En producción, permitir dominio de Vercel
         if (builder.Environment.IsProduction())
         {
-            policy.AllowAnyOrigin()
+            policy.WithOrigins("https://arroyosecoservices.vercel.app")
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         }
         else
         {
@@ -85,6 +86,7 @@ builder.Services.AddCors(p =>
             policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
                   .AllowAnyHeader()
                   .AllowAnyMethod()
+                  .AllowCredentials()
                   .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
         }
     });
