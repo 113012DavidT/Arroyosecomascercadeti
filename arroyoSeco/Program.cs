@@ -298,6 +298,33 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(role));
         }
     }
+    
+    // Crear usuario admin si no existe
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var adminEmail = builder.Configuration["SeedAdmin:Email"] ?? "admin@arroyo.com";
+    var adminPassword = builder.Configuration["SeedAdmin:Password"] ?? "Admin123!";
+    
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    if (adminUser == null)
+    {
+        adminUser = new IdentityUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            EmailConfirmed = true
+        };
+        
+        var result = await userManager.CreateAsync(adminUser, adminPassword);
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+            Console.WriteLine($"=== Admin user created: {adminEmail}");
+        }
+        else
+        {
+            Console.WriteLine($"=== Error creating admin: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
 }
 
 app.Run();
