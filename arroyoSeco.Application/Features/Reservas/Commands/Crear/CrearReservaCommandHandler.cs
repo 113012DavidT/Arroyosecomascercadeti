@@ -21,14 +21,14 @@ public class CrearReservaCommandHandler
 
     public async Task<int> Handle(CrearReservaCommand request, CancellationToken ct = default)
     {
-        // Normalizar fechas (solo fecha, sin hora) si quieres bloquear por días.
-        var entrada = request.FechaEntrada.Date;
-        var salida = request.FechaSalida.Date;
+        // Normalizar fechas a UTC (solo fecha, sin hora)
+        var entrada = DateTime.SpecifyKind(request.FechaEntrada.Date, DateTimeKind.Utc);
+        var salida = DateTime.SpecifyKind(request.FechaSalida.Date, DateTimeKind.Utc);
 
         if (entrada >= salida)
-            throw new InvalidOperationException("Rango de fechas inválido");
+            throw new InvalidOperationException("Rango de fechas invï¿½lido");
 
-        // Estado que bloquea disponibilidad (confirmadas o en curso de confirmación)
+        // Estado que bloquea disponibilidad (confirmadas o en curso de confirmaciï¿½n)
         var estadosBloquean = new[] { "Confirmada", "PagoEnRevision" };
 
         // Solapamiento (entrada < existente.FechaSalida && salida > existente.FechaEntrada)
@@ -50,7 +50,7 @@ public class CrearReservaCommandHandler
             throw new InvalidOperationException("Alojamiento inexistente");
 
         var noches = (salida - entrada).Days;
-        if (noches <= 0) throw new InvalidOperationException("Duración inválida");
+        if (noches <= 0) throw new InvalidOperationException("Duraciï¿½n invï¿½lida");
 
         var total = noches * alojamiento.PrecioPorNoche;
 
@@ -69,7 +69,7 @@ public class CrearReservaCommandHandler
         _ctx.Reservas.Add(reserva);
         await _ctx.SaveChangesAsync(ct);
 
-        // Notificación al oferente (opcional)
+        // Notificaciï¿½n al oferente (opcional)
         if (!string.IsNullOrWhiteSpace(alojamiento.OferenteId))
         {
             await _noti.PushAsync(alojamiento.OferenteId,
