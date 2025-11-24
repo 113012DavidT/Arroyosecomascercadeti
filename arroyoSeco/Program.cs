@@ -303,7 +303,7 @@ using (var scope = app.Services.CreateScope())
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
     var adminEmail = builder.Configuration["SeedAdmin:Email"] ?? "admin@arroyo.com";
     var adminPassword = builder.Configuration["SeedAdmin:Password"] ?? "Admin123!";
-    
+
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
@@ -323,6 +323,20 @@ using (var scope = app.Services.CreateScope())
         else
         {
             Console.WriteLine($"=== Error creating admin: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+    }
+    else
+    {
+        // Verify and assign Admin role if user exists but doesn't have it
+        var adminRoles = await userManager.GetRolesAsync(adminUser);
+        if (!adminRoles.Contains("Admin"))
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+            Console.WriteLine($"=== Admin role assigned to existing user: {adminEmail}");
+        }
+        else
+        {
+            Console.WriteLine($"=== Admin user already exists with correct role: {adminEmail}");
         }
     }
 }
