@@ -82,6 +82,11 @@ builder.Services.AddCors(p =>
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
+// DEBUG: Log para ver el valor de la cadena de conexión
+Console.WriteLine($"=== DATABASE_URL value: {Environment.GetEnvironmentVariable("DATABASE_URL") ?? "NULL"}");
+Console.WriteLine($"=== Connection string being used: {connectionString ?? "NULL"}");
+Console.WriteLine($"=== Connection string length: {connectionString?.Length ?? 0}");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         connectionString,
