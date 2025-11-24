@@ -13,6 +13,9 @@ public class CrearEstablecimientoCommand
 {
     public string Nombre { get; set; } = null!;
     public string Ubicacion { get; set; } = null!;
+    public double? Latitud { get; set; }
+    public double? Longitud { get; set; }
+    public string? Direccion { get; set; }
     public string? Descripcion { get; set; }
     public string? FotoPrincipal { get; set; }
 }
@@ -45,6 +48,9 @@ public class CrearEstablecimientoCommandHandler
             OferenteId = owner.Id,
             Nombre = request.Nombre.Trim(),
             Ubicacion = request.Ubicacion.Trim(),
+            Latitud = request.Latitud,
+            Longitud = request.Longitud,
+            Direccion = request.Direccion?.Trim(),
             Descripcion = request.Descripcion,
             FotoPrincipal = request.FotoPrincipal
         };

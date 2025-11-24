@@ -11,6 +11,9 @@ public class Alojamiento
 
     public string Nombre { get; set; } = null!;
     public string Ubicacion { get; set; } = null!;
+    public double? Latitud { get; set; }
+    public double? Longitud { get; set; }
+    public string? Direccion { get; set; }
     public int MaxHuespedes { get; set; }
     public int Habitaciones { get; set; }
     public int Banos { get; set; }

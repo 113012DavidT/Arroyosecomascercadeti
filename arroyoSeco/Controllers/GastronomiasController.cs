@@ -180,6 +180,15 @@ public class GastronomiasController : ControllerBase
         if (!string.IsNullOrWhiteSpace(request.Ubicacion))
             est.Ubicacion = request.Ubicacion;
         
+        if (request.Latitud.HasValue)
+            est.Latitud = request.Latitud;
+        
+        if (request.Longitud.HasValue)
+            est.Longitud = request.Longitud;
+        
+        if (request.Direccion != null)
+            est.Direccion = request.Direccion;
+        
         if (request.Descripcion != null)
             est.Descripcion = request.Descripcion;
         
@@ -212,6 +221,9 @@ public class GastronomiasController : ControllerBase
 public record UpdateEstablecimientoRequest(
     string? Nombre,
     string? Ubicacion,
+    double? Latitud,
+    double? Longitud,
+    string? Direccion,
     string? Descripcion,
     string? FotoPrincipal
 );

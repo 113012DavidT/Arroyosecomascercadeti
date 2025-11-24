@@ -6,7 +6,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using arroyoSeco.Domain.Entities.Alojamientos;
 using arroyoSeco.Application.Common.Interfaces;
-// Alias para evitar la colisión con el namespace Features.Alojamiento
+// Alias para evitar la colisiï¿½n con el namespace Features.Alojamiento
 using AlojamientoEntity = arroyoSeco.Domain.Entities.Alojamientos.Alojamiento;
 
 namespace arroyoSeco.Application.Features.Alojamiento.Commands.Crear;
@@ -15,6 +15,9 @@ public class CrearAlojamientoCommand
 {
     public string Nombre { get; set; } = null!;
     public string Ubicacion { get; set; } = null!;
+    public double? Latitud { get; set; }
+    public double? Longitud { get; set; }
+    public string? Direccion { get; set; }
     public int MaxHuespedes { get; set; }
     public int Habitaciones { get; set; }
     public int Banos { get; set; }
@@ -39,9 +42,9 @@ public class CrearAlojamientoCommandHandler
         if (string.IsNullOrWhiteSpace(request.Nombre))
             throw new ArgumentException("Nombre requerido");
         if (string.IsNullOrWhiteSpace(request.Ubicacion))
-            throw new ArgumentException("Ubicación requerida");
+            throw new ArgumentException("Ubicaciï¿½n requerida");
         if (request.PrecioPorNoche <= 0)
-            throw new ArgumentException("PrecioPorNoche inválido");
+            throw new ArgumentException("PrecioPorNoche invï¿½lido");
 
         var oferente = await _context.Oferentes
             .FirstOrDefaultAsync(o => o.Id == _current.UserId, ct);
@@ -53,6 +56,9 @@ public class CrearAlojamientoCommandHandler
             OferenteId = oferente.Id,
             Nombre = request.Nombre.Trim(),
             Ubicacion = request.Ubicacion.Trim(),
+            Latitud = request.Latitud,
+            Longitud = request.Longitud,
+            Direccion = request.Direccion?.Trim(),
             MaxHuespedes = request.MaxHuespedes,
             Habitaciones = request.Habitaciones,
             Banos = request.Banos,

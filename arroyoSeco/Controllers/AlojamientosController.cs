@@ -22,7 +22,7 @@ public class AlojamientosController : ControllerBase
         _current = current;
     }
 
-    // Público
+    // Pï¿½blico
     [AllowAnonymous]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AlojamientoEntity>>> List(CancellationToken ct)
@@ -31,7 +31,7 @@ public class AlojamientosController : ControllerBase
             .AsNoTracking()
             .ToListAsync(ct));
 
-    // Público
+    // Pï¿½blico
     [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<AlojamientoEntity>> GetById(int id, CancellationToken ct)
@@ -82,7 +82,7 @@ public class AlojamientosController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id }, id);
     }
 
-    public record ActualizarAlojamientoDto(string Nombre, string Ubicacion, int MaxHuespedes, int Habitaciones, int Banos, decimal PrecioPorNoche, string? FotoPrincipal);
+    public record ActualizarAlojamientoDto(string Nombre, string Ubicacion, double? Latitud, double? Longitud, string? Direccion, int MaxHuespedes, int Habitaciones, int Banos, decimal PrecioPorNoche, string? FotoPrincipal);
 
     // Solo Oferente
     [Authorize(Roles = "Oferente")]
@@ -94,6 +94,9 @@ public class AlojamientosController : ControllerBase
 
         a.Nombre = dto.Nombre;
         a.Ubicacion = dto.Ubicacion;
+        a.Latitud = dto.Latitud;
+        a.Longitud = dto.Longitud;
+        a.Direccion = dto.Direccion;
         a.MaxHuespedes = dto.MaxHuespedes;
         a.Habitaciones = dto.Habitaciones;
         a.Banos = dto.Banos;
