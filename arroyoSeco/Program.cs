@@ -9,6 +9,7 @@ using Microsoft.Extensions.FileProviders;
 using System.Text;
 using arroyoSeco.Infrastructure.Data;
 using arroyoSeco.Infrastructure.Auth;
+using arroyoSeco.Domain.Entities.Usuarios;
 using arroyoSeco.Application.Common.Interfaces;
 using arroyoSeco.Infrastructure.Services;
 using arroyoSeco.Application.Features.Alojamiento.Commands.Crear;
@@ -120,10 +121,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, 
+        npgsql => npgsql.MigrationsAssembly("arroyoSeco.Infrastructure")));
 
 builder.Services
-    .AddIdentityCore<IdentityUser>(opt =>
+    .AddIdentityCore<ApplicationUser>(opt =>
     {
         opt.User.RequireUniqueEmail = true;
         opt.Password.RequireDigit = false;
@@ -300,14 +302,14 @@ using (var scope = app.Services.CreateScope())
     }
     
     // Crear usuario admin si no existe
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var adminEmail = builder.Configuration["SeedAdmin:Email"] ?? "admin@arroyo.com";
     var adminPassword = builder.Configuration["SeedAdmin:Password"] ?? "Admin123!";
 
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
-        adminUser = new IdentityUser
+        adminUser = new ApplicationUser
         {
             UserName = adminEmail,
             Email = adminEmail,

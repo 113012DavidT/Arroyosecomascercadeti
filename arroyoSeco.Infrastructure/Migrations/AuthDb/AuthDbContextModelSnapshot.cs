@@ -92,6 +92,9 @@ namespace arroyoSeco.Infrastructure.Migrations.AuthDb
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("FechaPrimerLogin")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
@@ -113,6 +116,9 @@ namespace arroyoSeco.Infrastructure.Migrations.AuthDb
                         .HasColumnType("text");
 
                     b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("RequiereCambioPassword")
                         .HasColumnType("boolean");
 
                     b.Property<string>("SecurityStamp")

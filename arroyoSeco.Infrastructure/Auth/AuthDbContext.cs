@@ -1,3 +1,4 @@
+using arroyoSeco.Domain.Entities.Usuarios;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace arroyoSeco.Infrastructure.Auth;
 
 // DbContext para ASP.NET Core Identity (usuarios/roles)
-public class AuthDbContext : IdentityDbContext<IdentityUser, IdentityRole, string>
+public class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
 {
     public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }
 

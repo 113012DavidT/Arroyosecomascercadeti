@@ -14,13 +14,14 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
     public JwtTokenGenerator(IOptions<JwtOptions> opts) => _opts = opts.Value;
 
-    public string Generate(string userId, string email, IEnumerable<string> roles, DateTime? expires = null)
+    public string Generate(string userId, string email, IEnumerable<string> roles, bool requiereCambioPassword = false, DateTime? expires = null)
     {
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, userId),
             new Claim(ClaimTypes.Name, email),
             new Claim(ClaimTypes.Email, email),
+            new Claim("RequiereCambioPassword", requiereCambioPassword.ToString())
         };
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 

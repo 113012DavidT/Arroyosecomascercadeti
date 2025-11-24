@@ -10,6 +10,7 @@ using arroyoSeco.Application.Features.Reservas.Commands.CambiarEstado;
 using arroyoSeco.Infrastructure.Storage;
 using arroyoSeco.Domain.Entities;
 using arroyoSeco.Domain.Entities.Alojamientos;
+using arroyoSeco.Domain.Entities.Usuarios;
 using System.Data;
 
 namespace arroyoSeco.Controllers;
@@ -24,7 +25,7 @@ public class ReservasController : ControllerBase
     private readonly CambiarEstadoReservaCommandHandler _cambiarEstado;
     private readonly ICurrentUserService _current;
     private readonly string _comprobantesPath;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public ReservasController(
         IAppDbContext db,
@@ -32,7 +33,7 @@ public class ReservasController : ControllerBase
         CambiarEstadoReservaCommandHandler cambiarEstado,
         ICurrentUserService current,
         IOptions<StorageOptions> storage,
-        UserManager<IdentityUser> userManager)
+        UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _crear = crear;

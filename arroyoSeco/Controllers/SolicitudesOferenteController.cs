@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using arroyoSeco.Application.Common.Interfaces;
 using arroyoSeco.Domain.Entities.Solicitudes;
+using arroyoSeco.Domain.Entities.Usuarios;
 
 namespace arroyoSeco.Controllers;
 
@@ -12,12 +13,12 @@ public class SolicitudesOferenteController : ControllerBase
 {
     private readonly IAppDbContext _db;
     private readonly INotificationService _noti;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     
     public SolicitudesOferenteController(
         IAppDbContext db,
         INotificationService noti,
-        UserManager<IdentityUser> userManager)
+        UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _noti = noti;

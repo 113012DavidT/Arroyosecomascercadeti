@@ -5,6 +5,7 @@ using arroyoSeco.Application.Common.Interfaces;
 using arroyoSeco.Domain.Entities.Enums;
 using Microsoft.AspNetCore.Identity;
 using arroyoSeco.Infrastructure.Auth;
+using arroyoSeco.Domain.Entities.Usuarios;
 
 namespace arroyoSeco.Controllers;
 
@@ -13,10 +14,10 @@ namespace arroyoSeco.Controllers;
 public class OferentesController : ControllerBase
 {
     private readonly IAppDbContext _db;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly ICurrentUserService _current;
 
-    public OferentesController(IAppDbContext db, UserManager<IdentityUser> userManager, ICurrentUserService current)
+    public OferentesController(IAppDbContext db, UserManager<ApplicationUser> userManager, ICurrentUserService current)
     {
         _db = db;
         _userManager = userManager;

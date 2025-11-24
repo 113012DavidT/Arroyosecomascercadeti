@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using arroyoSeco.Application.Common.Interfaces;
 using arroyoSeco.Domain.Entities.Solicitudes;
+using arroyoSeco.Domain.Entities.Usuarios;
 using UsuarioOferente = arroyoSeco.Domain.Entities.Usuarios.Oferente;
 
 namespace arroyoSeco.Controllers;
@@ -15,13 +16,13 @@ public class OferentesAdminController : ControllerBase
 {
     private readonly IAppDbContext _db;
     private readonly INotificationService _noti;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
 
     public OferentesAdminController(
         IAppDbContext db,
         INotificationService noti,
-        UserManager<IdentityUser> userManager,
+        UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager)
     {
         _db = db;
@@ -39,7 +40,7 @@ public class OferentesAdminController : ControllerBase
         var existing = await _userManager.FindByEmailAsync(dto.Email);
         if (existing is not null) return Conflict("Ya existe un usuario con ese email.");
 
-        var user = new IdentityUser { UserName = dto.Email, Email = dto.Email, EmailConfirmed = true };
+        var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email, EmailConfirmed = true, RequiereCambioPassword = true };
         var res = await _userManager.CreateAsync(user, dto.Password);
         if (!res.Succeeded) return BadRequest(res.Errors);
 
@@ -156,12 +157,13 @@ public class OferentesAdminController : ControllerBase
         var user = await _userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            user = new IdentityUser 
+            user = new ApplicationUser 
             { 
                 UserName = email, 
                 Email = email, 
                 EmailConfirmed = true,
-                PhoneNumber = s.Telefono
+                PhoneNumber = s.Telefono,
+                RequiereCambioPassword = true
             };
             
             // Generar contraseña temporal

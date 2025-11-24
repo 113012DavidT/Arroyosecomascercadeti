@@ -2,5 +2,5 @@ namespace arroyoSeco.Application.Common.Interfaces;
 
 public interface IJwtTokenGenerator
 {
-    string Generate(string userId, string email, IEnumerable<string> roles, DateTime? expires = null);
+    string Generate(string userId, string email, IEnumerable<string> roles, bool requiereCambioPassword = false, DateTime? expires = null);
 }

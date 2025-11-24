@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using arroyoSeco.Application.Common.Interfaces;
 using arroyoSeco.Domain.Entities.Usuarios;
 
@@ -10,14 +11,14 @@ namespace arroyoSeco.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IJwtTokenGenerator _token;
     private readonly IAppDbContext _db;
 
     public AuthController(
-        UserManager<IdentityUser> userManager,
-        SignInManager<IdentityUser> signInManager,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         IJwtTokenGenerator token,
         IAppDbContext db)
     {
@@ -29,12 +30,13 @@ public class AuthController : ControllerBase
 
     public record RegisterDto(string Email, string Password, string? Role, int? TipoOferente);
     public record LoginDto(string Email, string Password);
+    public record CambiarPasswordDto(string PasswordActual, string PasswordNueva);
 
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        var user = new IdentityUser { UserName = dto.Email, Email = dto.Email, EmailConfirmed = true };
+        var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email, EmailConfirmed = true };
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded) return BadRequest(result.Errors);
 
@@ -75,8 +77,15 @@ public class AuthController : ControllerBase
         var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: false);
         if (!result.Succeeded) return Unauthorized();
 
+        // Actualizar FechaPrimerLogin si es la primera vez
+        if (!user.FechaPrimerLogin.HasValue)
+        {
+            user.FechaPrimerLogin = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+        }
+
         var roles = await _userManager.GetRolesAsync(user);
-        var jwt = _token.Generate(user.Id, user.Email!, roles);
+        var jwt = _token.Generate(user.Id, user.Email!, roles, user.RequiereCambioPassword);
         return Ok(new { token = jwt });
     }
 
@@ -88,5 +97,29 @@ public class AuthController : ControllerBase
         if (user is null) return Unauthorized();
         var roles = await _userManager.GetRolesAsync(user);
         return Ok(new { id = user.Id, email = user.Email, roles });
+    }
+
+    [Authorize]
+    [HttpPost("cambiar-password")]
+    public async Task<IActionResult> CambiarPassword([FromBody] CambiarPasswordDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound();
+
+        var result = await _userManager.ChangePasswordAsync(user, dto.PasswordActual, dto.PasswordNueva);
+        if (!result.Succeeded) 
+            return BadRequest(new { message = "Contraseña actual incorrecta o la nueva contraseña no cumple con los requisitos", errors = result.Errors });
+
+        // Marcar que ya cambió la contraseña
+        if (user.RequiereCambioPassword)
+        {
+            user.RequiereCambioPassword = false;
+            await _userManager.UpdateAsync(user);
+        }
+
+        return Ok(new { message = "Contraseña actualizada exitosamente" });
     }
 }
