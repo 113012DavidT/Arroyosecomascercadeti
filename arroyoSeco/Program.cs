@@ -9,6 +9,7 @@ using Microsoft.Extensions.FileProviders;
 using System.Text;
 using arroyoSeco.Infrastructure.Data;
 using arroyoSeco.Infrastructure.Auth;
+using arroyoSeco.Infrastructure.Services;
 using arroyoSeco.Domain.Entities.Usuarios;
 using arroyoSeco.Application.Common.Interfaces;
 using arroyoSeco.Infrastructure.Services;
@@ -168,6 +169,7 @@ builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbConte
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IFolioGenerator, FolioGenerator>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IStorageService, DiskStorageService>();
 builder.Services.AddScoped<CrearAlojamientoCommandHandler>();
@@ -219,6 +221,30 @@ builder.Services.PostConfigure<StorageOptions>(o =>
 {
     if (string.IsNullOrWhiteSpace(o.ComprobantesPath))
         o.ComprobantesPath = storage.ComprobantesPath;
+});
+
+// Configurar opciones de Email
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+var emailOptions = builder.Configuration.GetSection("Email").Get<EmailOptions>();
+if (emailOptions != null && string.IsNullOrWhiteSpace(emailOptions.SmtpHost))
+{
+    // Valores por defecto si no está configurado
+    emailOptions.SmtpHost = "smtp.mailtrap.io";
+    emailOptions.SmtpPort = 465;
+    emailOptions.FromEmail = "noreply@arroyoseco.com";
+    emailOptions.FromName = "Arroyo Seco";
+}
+builder.Services.PostConfigure<EmailOptions>(o =>
+{
+    if (emailOptions != null && !string.IsNullOrWhiteSpace(emailOptions.SmtpHost))
+    {
+        o.SmtpHost = emailOptions.SmtpHost;
+        o.SmtpPort = emailOptions.SmtpPort;
+        o.SmtpUsername = emailOptions.SmtpUsername;
+        o.SmtpPassword = emailOptions.SmtpPassword;
+        o.FromEmail = emailOptions.FromEmail;
+        o.FromName = emailOptions.FromName;
+    }
 });
 
 var app = builder.Build();
