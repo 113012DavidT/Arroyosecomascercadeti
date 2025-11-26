@@ -85,6 +85,27 @@ public class AppDbContext : DbContext, IAppDbContext
             e.Property(r => r.ComprobanteUrl).HasMaxLength(500);
         });
 
+        b.Entity<ReservaGastronomia>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.Property(r => r.UsuarioId).IsRequired();
+            e.Property(r => r.EstablecimientoId).IsRequired();
+            e.Property(r => r.Fecha).IsRequired();
+            e.Property(r => r.Estado).IsRequired().HasDefaultValue("Pendiente");
+            e.Property(r => r.NumeroPersonas).IsRequired();
+            e.Property(r => r.Total).HasColumnType("decimal(65,30)").HasDefaultValue(0);
+            
+            e.HasOne(r => r.Establecimiento)
+                .WithMany(est => est.Reservas)
+                .HasForeignKey(r => r.EstablecimientoId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            e.HasOne(r => r.Mesa)
+                .WithMany()
+                .HasForeignKey(r => r.MesaId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         b.Entity<Notificacion>().HasIndex(n => n.UsuarioId);
         b.Entity<SolicitudOferente>().HasIndex(s => s.Estatus);
 

@@ -135,7 +135,7 @@ namespace arroyoSeco.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<decimal>("Total")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(65,30)");
 
                     b.HasKey("Id");
 
@@ -279,7 +279,9 @@ namespace arroyoSeco.Infrastructure.Migrations
 
                     b.Property<string>("Estado")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Pendiente");
 
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("timestamp with time zone");
@@ -291,7 +293,9 @@ namespace arroyoSeco.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal>("Total")
-                        .HasColumnType("numeric");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(65,30)")
+                        .HasDefaultValue(0m);
 
                     b.Property<string>("UsuarioId")
                         .IsRequired()
@@ -507,7 +511,8 @@ namespace arroyoSeco.Infrastructure.Migrations
 
                     b.HasOne("arroyoSeco.Domain.Entities.Gastronomia.Mesa", "Mesa")
                         .WithMany()
-                        .HasForeignKey("MesaId");
+                        .HasForeignKey("MesaId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Establecimiento");
 
