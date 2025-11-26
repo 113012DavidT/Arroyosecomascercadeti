@@ -93,7 +93,7 @@ public class AppDbContext : DbContext, IAppDbContext
             e.Property(r => r.Fecha).IsRequired();
             e.Property(r => r.Estado).IsRequired().HasDefaultValue("Pendiente");
             e.Property(r => r.NumeroPersonas).IsRequired();
-            e.Property(r => r.Total).HasColumnType("decimal(65,30)").HasDefaultValue(0);
+            e.Property(r => r.Total).HasColumnType("numeric(18,2)").HasDefaultValue(0);
             
             e.HasOne(r => r.Establecimiento)
                 .WithMany(est => est.Reservas)
