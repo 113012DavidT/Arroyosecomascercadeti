@@ -37,6 +37,13 @@ public class ReservasGastronomiaController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] CrearReservaGastronomiaCommand cmd, CancellationToken ct)
     {
+        // Validación explícita de autenticación
+        if (!User.Identity?.IsAuthenticated ?? true)
+            return Unauthorized(new { message = "Debes iniciar sesión para crear una reserva" });
+
+        if (string.IsNullOrWhiteSpace(_current.UserId))
+            return Unauthorized(new { message = "Usuario no identificado" });
+
         try
         {
             var id = await _crear.Handle(cmd, ct);
