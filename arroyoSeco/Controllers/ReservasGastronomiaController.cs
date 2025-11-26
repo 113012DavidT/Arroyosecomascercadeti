@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using arroyoSeco.Application.Common.Interfaces;
 using arroyoSeco.Application.Features.Gastronomia.Commands.Crear;
+using arroyoSeco.Domain.Entities.Usuarios;
 
 namespace arroyoSeco.Controllers;
 
@@ -14,12 +16,21 @@ public class ReservasGastronomiaController : ControllerBase
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly CrearReservaGastronomiaCommandHandler _crear;
+    private readonly IEmailService _email;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ReservasGastronomiaController(IAppDbContext db, ICurrentUserService current, CrearReservaGastronomiaCommandHandler crear)
+    public ReservasGastronomiaController(
+        IAppDbContext db,
+        ICurrentUserService current,
+        CrearReservaGastronomiaCommandHandler crear,
+        IEmailService email,
+        UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _current = current;
         _crear = crear;
+        _email = email;
+        _userManager = userManager;
     }
 
     // POST /api/ReservasGastronomia
@@ -235,6 +246,79 @@ public class ReservasGastronomiaController : ControllerBase
 
         reserva.Estado = dto.Estado;
         await _db.SaveChangesAsync(ct);
+
+        // Enviar correo al cliente
+        var cliente = await _userManager.FindByIdAsync(reserva.UsuarioId);
+        if (cliente?.Email != null)
+        {
+            var asunto = "";
+            var mensaje = "";
+            var color = "";
+
+            if (dto.Estado == "Confirmada")
+            {
+                asunto = "Tu reserva en gastronomía ha sido confirmada";
+                mensaje = $"Tu reserva en {reserva.Establecimiento?.Nombre} para {reserva.NumeroPersonas} personas el {reserva.Fecha:dd/MM/yyyy HH:mm} ha sido confirmada.";
+                color = "#27ae60";
+            }
+            else if (dto.Estado == "Cancelada")
+            {
+                asunto = "Tu reserva en gastronomía ha sido cancelada";
+                mensaje = $"Tu reserva en {reserva.Establecimiento?.Nombre} ha sido cancelada.";
+                color = "#e74c3c";
+            }
+            else if (dto.Estado == "Completada")
+            {
+                asunto = "Tu reserva en gastronomía ha sido completada";
+                mensaje = $"¡Gracias por visitarnos en {reserva.Establecimiento?.Nombre}! Esperamos verte pronto.";
+                color = "#3498db";
+            }
+
+            if (!string.IsNullOrEmpty(mensaje))
+            {
+                var correoHtml = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: {color}; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
+        .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
+        .details {{ background-color: #fff; padding: 15px; border-left: 4px solid {color}; margin: 15px 0; }}
+        .details p {{ margin: 5px 0; }}
+        .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>{asunto}</h1>
+        </div>
+        <div class='content'>
+            <p>Hola {cliente.UserName},</p>
+            <p>{mensaje}</p>
+            
+            <div class='details'>
+                <p><strong>Establecimiento:</strong> {reserva.Establecimiento?.Nombre}</p>
+                <p><strong>Fecha:</strong> {reserva.Fecha:dd/MM/yyyy HH:mm}</p>
+                <p><strong>Personas:</strong> {reserva.NumeroPersonas}</p>
+                <p><strong>Total:</strong> ${reserva.Total:F2}</p>
+            </div>
+            
+            <p>Si tienes dudas, contáctanos a través de nuestro sitio web.</p>
+        </div>
+        <div class='footer'>
+            <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+                await _email.SendEmailAsync(cliente.Email, asunto, correoHtml, ct);
+            }
+        }
 
         return Ok(new { reserva.Id, reserva.Estado });
     }

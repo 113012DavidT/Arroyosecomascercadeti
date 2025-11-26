@@ -16,17 +16,20 @@ public class OferentesAdminController : ControllerBase
 {
     private readonly IAppDbContext _db;
     private readonly INotificationService _noti;
+    private readonly IEmailService _email;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
 
     public OferentesAdminController(
         IAppDbContext db,
         INotificationService noti,
+        IEmailService email,
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager)
     {
         _db = db;
         _noti = noti;
+        _email = email;
         _userManager = userManager;
         _roleManager = roleManager;
     }
@@ -155,8 +158,13 @@ public class OferentesAdminController : ControllerBase
         // crea (o reutiliza) usuario por correo de la solicitud
         var email = string.IsNullOrWhiteSpace(s.Correo) ? $"oferente{id}@arroyoseco.com" : s.Correo.Trim();
         var user = await _userManager.FindByEmailAsync(email);
+        string tempPass = "Temporal.123";
+        
         if (user is null)
         {
+            // Generar contraseña temporal más segura
+            tempPass = "Temp" + Guid.NewGuid().ToString("N")[..8] + "!";
+            
             user = new ApplicationUser 
             { 
                 UserName = email, 
@@ -166,8 +174,6 @@ public class OferentesAdminController : ControllerBase
                 RequiereCambioPassword = true
             };
             
-            // Generar contraseña temporal
-            var tempPass = "Temporal.123"; // O generar: "Temp" + Guid.NewGuid().ToString("N")[..8] + "!";
             var res = await _userManager.CreateAsync(user, tempPass);
             if (!res.Succeeded) return BadRequest(res.Errors);
             
@@ -185,8 +191,8 @@ public class OferentesAdminController : ControllerBase
                 Id = user.Id, 
                 Nombre = s.NombreNegocio, 
                 NumeroAlojamientos = 0,
-                Tipo = s.TipoSolicitado, // Usar el tipo solicitado
-                Estado = "Pendiente" // Estado inicial
+                Tipo = s.TipoSolicitado,
+                Estado = "Pendiente"
             });
         }
 
@@ -195,12 +201,58 @@ public class OferentesAdminController : ControllerBase
         s.FechaRespuesta = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
-        // Notificar al usuario aprobado
+        // Enviar correo con contraseña temporal
+        var tipoTexto = GetTipoTexto((int)s.TipoSolicitado);
+        var correoHtml = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #2c3e50; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
+        .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
+        .credentials {{ background-color: #fff; padding: 15px; border-left: 4px solid #27ae60; margin: 15px 0; }}
+        .credentials p {{ margin: 5px 0; }}
+        .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>¡Bienvenido a Arroyo Seco!</h1>
+        </div>
+        <div class='content'>
+            <p>Hola {s.NombreSolicitante},</p>
+            <p>Tu solicitud para ser oferente de <strong>{tipoTexto}</strong> ha sido <strong style='color: #27ae60;'>APROBADA</strong>.</p>
+            
+            <div class='credentials'>
+                <p><strong>Email:</strong> {email}</p>
+                <p><strong>Contraseña temporal:</strong> {tempPass}</p>
+                <p><em>Por favor, cambia tu contraseña al iniciar sesión por primera vez.</em></p>
+            </div>
+            
+            <p>Puedes acceder a tu panel de control en: <a href='https://arroyosecoservices.vercel.app/login'>Inicia sesión</a></p>
+            <p>Si tienes dudas, contáctanos a través de nuestro sitio web.</p>
+            
+            <p>¡Esperamos trabajar contigo!</p>
+        </div>
+        <div class='footer'>
+            <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await _email.SendEmailAsync(email, "Tu cuenta de Oferente ha sido aprobada", correoHtml, ct);
+
+        // Notificación en BD
         await _noti.PushAsync(user.Id, "Solicitud aprobada",
-            $"Tu solicitud para ser oferente de {GetTipoTexto((int)s.TipoSolicitado)} fue aprobada. Contraseña temporal: Temporal.123", 
+            $"Tu solicitud para ser oferente de {tipoTexto} fue aprobada. Hemos enviado tus credenciales al correo.", 
             "SolicitudOferente", null, ct);
 
-        return Ok(new { id = user.Id, email = user.Email, tipo = s.TipoSolicitado, message = "Solicitud aprobada" });
+        return Ok(new { id = user.Id, email = user.Email, tipo = s.TipoSolicitado, message = "Solicitud aprobada y correo enviado" });
     }
 
     private string GetTipoTexto(int tipo) => tipo switch
@@ -220,8 +272,42 @@ public class OferentesAdminController : ControllerBase
         s.Estatus = "Rechazada";
         s.FechaRespuesta = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        // Enviar correo de rechazo
+        var correoHtml = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #e74c3c; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
+        .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
+        .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Solicitud de Oferente - Decisión</h1>
+        </div>
+        <div class='content'>
+            <p>Hola {s.NombreSolicitante},</p>
+            <p>Lamentablemente, tu solicitud para ser oferente en Arroyo Seco ha sido <strong style='color: #e74c3c;'>RECHAZADA</strong> en esta ocasión.</p>
+            <p>Puedes volver a intentar en el futuro presentando una nueva solicitud.</p>
+            <p>Si tienes preguntas, no dudes en contactarnos.</p>
+        </div>
+        <div class='footer'>
+            <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await _email.SendEmailAsync(s.Correo, "Tu solicitud de oferente ha sido rechazada", correoHtml, ct);
         
-        return Ok(new { message = "Solicitud rechazada" });
+        return Ok(new { message = "Solicitud rechazada y correo enviado" });
     }
 
     // Cambiar estado de oferente

@@ -26,6 +26,7 @@ public class ReservasController : ControllerBase
     private readonly ICurrentUserService _current;
     private readonly string _comprobantesPath;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IEmailService _email;
 
     public ReservasController(
         IAppDbContext db,
@@ -33,7 +34,8 @@ public class ReservasController : ControllerBase
         CambiarEstadoReservaCommandHandler cambiarEstado,
         ICurrentUserService current,
         IOptions<StorageOptions> storage,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IEmailService email)
     {
         _db = db;
         _crear = crear;
@@ -41,6 +43,7 @@ public class ReservasController : ControllerBase
         _current = current;
         _comprobantesPath = storage.Value.ComprobantesPath;
         _userManager = userManager;
+        _email = email;
     }
 
     // GET /api/reservas/alojamiento/{alojamientoId}?estado=Pendiente
@@ -250,8 +253,96 @@ public class ReservasController : ControllerBase
     [HttpPatch("{id:int}/estado")]
     public async Task<IActionResult> CambiarEstado(int id, [FromBody] CambiarEstadoReservaDto dto, CancellationToken ct)
     {
-        var cmd = new CambiarEstadoReservaCommand { ReservaId = id, NuevoEstado = dto.Estado };
-        await _cambiarEstado.Handle(cmd, ct);
+        var r = await _db.Reservas
+            .Include(x => x.Alojamiento)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+        
+        if (r is null) return NotFound(new { message = "Reserva no encontrada" });
+
+        var estadoAnterior = r.Estado;
+        var cambio = $"{estadoAnterior} → {dto.Estado}";
+
+        await _cambiarEstado.Handle(new CambiarEstadoReservaCommand { ReservaId = id, NuevoEstado = dto.Estado }, ct);
+
+        // Obtener datos actualizados
+        r = await _db.Reservas
+            .Include(x => x.Alojamiento)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+        // Enviar correo al cliente notificando cambio de estado
+        var cliente = await _userManager.FindByIdAsync(r.ClienteId);
+        if (cliente?.Email != null)
+        {
+            var asunto = "";
+            var mensaje = "";
+            var color = "";
+
+            if (dto.Estado == "Confirmada")
+            {
+                asunto = "Tu reserva ha sido confirmada";
+                mensaje = $"La reserva en {r.Alojamiento?.Nombre} desde {r.FechaEntrada:dd/MM/yyyy} hasta {r.FechaSalida:dd/MM/yyyy} ha sido confirmada.";
+                color = "#27ae60";
+            }
+            else if (dto.Estado == "Cancelada")
+            {
+                asunto = "Tu reserva ha sido cancelada";
+                mensaje = $"La reserva en {r.Alojamiento?.Nombre} ha sido cancelada.";
+                color = "#e74c3c";
+            }
+            else if (dto.Estado == "Completada")
+            {
+                asunto = "Tu reserva ha sido completada";
+                mensaje = $"Tu estadía en {r.Alojamiento?.Nombre} ha finalizado. ¡Gracias por visitarnos!";
+                color = "#3498db";
+            }
+
+            if (!string.IsNullOrEmpty(mensaje))
+            {
+                var correoHtml = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: {color}; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
+        .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
+        .details {{ background-color: #fff; padding: 15px; border-left: 4px solid {color}; margin: 15px 0; }}
+        .details p {{ margin: 5px 0; }}
+        .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>{asunto}</h1>
+        </div>
+        <div class='content'>
+            <p>Hola {cliente.UserName},</p>
+            <p>{mensaje}</p>
+            
+            <div class='details'>
+                <p><strong>Folio:</strong> {r.Folio}</p>
+                <p><strong>Alojamiento:</strong> {r.Alojamiento?.Nombre}</p>
+                <p><strong>Entrada:</strong> {r.FechaEntrada:dd/MM/yyyy}</p>
+                <p><strong>Salida:</strong> {r.FechaSalida:dd/MM/yyyy}</p>
+                <p><strong>Total:</strong> ${r.Total:F2}</p>
+            </div>
+            
+            <p>Si tienes dudas, contáctanos a través de nuestro sitio web.</p>
+        </div>
+        <div class='footer'>
+            <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+                await _email.SendEmailAsync(cliente.Email, asunto, correoHtml, ct);
+            }
+        }
+
         return NoContent();
     }
 
