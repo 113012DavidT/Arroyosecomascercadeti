@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using arroyoSeco.Application.Common.Interfaces;
+using arroyoSeco.Application.Features.Gastronomia.Commands.Crear;
 
 namespace arroyoSeco.Controllers;
 
@@ -12,11 +13,79 @@ public class ReservasGastronomiaController : ControllerBase
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _current;
+    private readonly CrearReservaGastronomiaCommandHandler _crear;
 
-    public ReservasGastronomiaController(IAppDbContext db, ICurrentUserService current)
+    public ReservasGastronomiaController(IAppDbContext db, ICurrentUserService current, CrearReservaGastronomiaCommandHandler crear)
     {
         _db = db;
         _current = current;
+        _crear = crear;
+    }
+
+    // POST /api/ReservasGastronomia
+    [HttpPost]
+    public async Task<IActionResult> Crear([FromBody] CrearReservaGastronomiaCommand cmd, CancellationToken ct)
+    {
+        try
+        {
+            var id = await _crear.Handle(cmd, ct);
+            var reserva = await _db.ReservasGastronomia
+                .AsNoTracking()
+                .Include(r => r.Establecimiento)
+                .FirstOrDefaultAsync(x => x.Id == id, ct);
+            
+            if (reserva is null) 
+                return Created(nameof(Crear), new { Id = id });
+            
+            return CreatedAtAction(nameof(GetByIdGastronomia), new { id = reserva.Id }, new 
+            { 
+                reserva.Id, 
+                reserva.EstablecimientoId, 
+                reserva.Fecha, 
+                reserva.NumeroPersonas, 
+                reserva.Estado 
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = "Error creando reserva", detalle = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = "Datos inválidos", detalle = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = "Error interno", detalle = ex.Message });
+        }
+    }
+
+    // GET /api/ReservasGastronomia/{id}
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetByIdGastronomia(int id, CancellationToken ct)
+    {
+        var reserva = await _db.ReservasGastronomia
+            .AsNoTracking()
+            .Include(r => r.Establecimiento)
+            .Include(r => r.Mesa)
+            .FirstOrDefaultAsync(r => r.Id == id, ct);
+        
+        if (reserva is null) 
+            return NotFound(new { message = "Reserva no encontrada" });
+        
+        return Ok(new
+        {
+            reserva.Id,
+            reserva.EstablecimientoId,
+            EstablecimientoNombre = reserva.Establecimiento?.Nombre,
+            reserva.MesaId,
+            MesaNumero = reserva.Mesa?.Numero,
+            reserva.UsuarioId,
+            reserva.Fecha,
+            reserva.NumeroPersonas,
+            reserva.Estado,
+            reserva.Total
+        });
     }
 
     // GET /api/ReservasGastronomia/activas
