@@ -18,12 +18,16 @@ public class CambiarEstadoReservaCommandHandler
 
     public async Task Handle(CambiarEstadoReservaCommand request, CancellationToken ct = default)
     {
-        if (!Permitidos.Contains(request.NuevoEstado)) throw new ArgumentException("Estado inválido");
+        // Trim y normalizar el estado recibido
+        var nuevoEstado = request.NuevoEstado?.Trim();
+        
+        if (string.IsNullOrWhiteSpace(nuevoEstado) || !Permitidos.Contains(nuevoEstado))
+            throw new ArgumentException($"Estado invÃ¡lido: '{nuevoEstado}'. Permitidos: {string.Join(", ", Permitidos)}");
 
         var reserva = await _ctx.Reservas.FirstOrDefaultAsync(r => r.Id == request.ReservaId, ct)
             ?? throw new KeyNotFoundException("Reserva no encontrada");
 
-        reserva.Estado = request.NuevoEstado;
+        reserva.Estado = nuevoEstado;
         await _ctx.SaveChangesAsync(ct);
     }
 }
