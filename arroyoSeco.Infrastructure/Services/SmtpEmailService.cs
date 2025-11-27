@@ -1,6 +1,7 @@
 using System;
-using System.Net;
-using System.Net.Mail;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,11 +14,13 @@ public class SmtpEmailService : IEmailService
 {
     private readonly EmailOptions _options;
     private readonly ILogger<SmtpEmailService> _logger;
+    private readonly HttpClient _httpClient;
 
     public SmtpEmailService(IOptions<EmailOptions> options, ILogger<SmtpEmailService> logger)
     {
         _options = options.Value;
         _logger = logger;
+        _httpClient = new HttpClient();
     }
 
     public async Task<bool> SendEmailAsync(
@@ -34,26 +37,38 @@ public class SmtpEmailService : IEmailService
 
         try
         {
-            using var client = new SmtpClient(_options.SmtpHost, _options.SmtpPort)
+            // Usar API REST de Brevo en lugar de SMTP
+            var payload = new
             {
-                Credentials = new NetworkCredential(_options.SmtpUsername, _options.SmtpPassword),
-                EnableSsl = true,
-                Timeout = 30000
+                sender = new { email = _options.FromEmail, name = _options.FromName },
+                to = new[] { new { email = toEmail } },
+                subject = subject,
+                htmlContent = htmlBody
             };
 
-            using var message = new MailMessage
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Agregar header de API key
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Add("api-key", _options.SmtpPassword); // La contraseña es la API key
+
+            var response = await _httpClient.PostAsync(
+                "https://api.brevo.com/v3/smtp/email",
+                content,
+                ct);
+
+            if (response.IsSuccessStatusCode)
             {
-                From = new MailAddress(_options.FromEmail, _options.FromName),
-                Subject = subject,
-                Body = htmlBody,
-                IsBodyHtml = true
-            };
-
-            message.To.Add(toEmail);
-
-            await client.SendMailAsync(message);
-            _logger.LogInformation($"Correo enviado a {toEmail}");
-            return true;
+                _logger.LogInformation($"Correo enviado a {toEmail}");
+                return true;
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError($"Error Brevo API: {response.StatusCode} - {errorContent}");
+                return false;
+            }
         }
         catch (Exception ex)
         {
