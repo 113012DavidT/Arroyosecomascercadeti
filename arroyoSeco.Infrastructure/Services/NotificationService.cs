@@ -47,7 +47,7 @@ public class NotificationService : INotificationService
         _ctx.Notificaciones.Add(n);
         await _ctx.SaveChangesAsync(ct);
 
-        // Enviar correo de forma asíncrona (sin bloquear)
+        // Enviar correo de forma asíncrona (sin bloquear) - usar CancellationToken.None para que no se cancele con la request
         _ = Task.Run(async () =>
         {
             try
@@ -60,14 +60,14 @@ public class NotificationService : INotificationService
                         titulo,
                         mensaje,
                         url,
-                        ct);
+                        CancellationToken.None);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error enviando email para notificación {n.Id}");
             }
-        }, ct);
+        }, CancellationToken.None);
 
         return n.Id;
     }

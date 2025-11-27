@@ -38,7 +38,7 @@ public class SmtpEmailService : IEmailService
             {
                 Credentials = new NetworkCredential(_options.SmtpUsername, _options.SmtpPassword),
                 EnableSsl = true,
-                Timeout = 10000
+                Timeout = 30000
             };
 
             using var message = new MailMessage
@@ -51,7 +51,7 @@ public class SmtpEmailService : IEmailService
 
             message.To.Add(toEmail);
 
-            await client.SendMailAsync(message, ct);
+            await client.SendMailAsync(message);
             _logger.LogInformation($"Correo enviado a {toEmail}");
             return true;
         }
