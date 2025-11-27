@@ -35,7 +35,7 @@ public class OferentesAdminController : ControllerBase
     }
 
     // Crear usuario Identity de tipo Oferente y su registro en tabla Oferentes
-    public record CrearUsuarioOferenteDto(string Email, string Password, string Nombre);
+    public record CrearUsuarioOferenteDto(string Email, string Password, string Nombre, int Tipo);
 
     [HttpPost("usuarios")]
     public async Task<IActionResult> CrearUsuarioOferente([FromBody] CrearUsuarioOferenteDto dto, CancellationToken ct)
@@ -54,12 +54,13 @@ public class OferentesAdminController : ControllerBase
         // Crea el Oferente (dominio)
         if (!await _db.Oferentes.AnyAsync(o => o.Id == user.Id, ct))
         {
-            var o = new UsuarioOferente { Id = user.Id, Nombre = dto.Nombre, NumeroAlojamientos = 0 };
+            var o = new UsuarioOferente { Id = user.Id, Nombre = dto.Nombre, NumeroAlojamientos = 0, Tipo = (arroyoSeco.Domain.Entities.Enums.TipoOferente)dto.Tipo };
             _db.Oferentes.Add(o);
             await _db.SaveChangesAsync(ct);
         }
 
         // Notificación en BD + Enviar correo con credenciales
+        var tipoTexto = GetTipoTexto(dto.Tipo);
         var correoHtml = $@"
 <!DOCTYPE html>
 <html>
@@ -83,7 +84,7 @@ public class OferentesAdminController : ControllerBase
         </div>
         <div class='content'>
             <p>Hola {dto.Nombre},</p>
-            <p>Tu cuenta de oferente en <strong>Arroyo Seco</strong> ha sido creada por un administrador.</p>
+            <p>Tu cuenta de oferente en <strong>Arroyo Seco</strong> para <strong>{tipoTexto}</strong> ha sido creada por un administrador.</p>
             
             <div class='credentials'>
                 <p><strong>Email:</strong> {dto.Email}</p>
@@ -111,7 +112,7 @@ public class OferentesAdminController : ControllerBase
 
         // Notificación en BD
         await _noti.PushAsync(user.Id, "Cuenta de Oferente creada",
-            "Tu cuenta de oferente ha sido creada por un administrador. Hemos enviado tus credenciales al correo.", "Oferente", null, ct);
+            $"Tu cuenta de oferente para {tipoTexto} ha sido creada por un administrador. Hemos enviado tus credenciales al correo.", "Oferente", null, ct);
 
         return CreatedAtAction(nameof(Get), new { id = user.Id }, new { user.Id, user.Email });
     }
