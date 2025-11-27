@@ -254,6 +254,31 @@ public class ReservasController : ControllerBase
         return r is null ? NotFound() : Ok(r);
     }
 
+    // GET /api/reservas/{id}/comprobante - Descargar comprobante por ID de reserva
+    [HttpGet("{id:int}/comprobante")]
+    public async Task<IActionResult> DescargarComprobante(int id, CancellationToken ct)
+    {
+        var r = await _db.Reservas.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (r is null) return NotFound(new { message = "Reserva no encontrada" });
+
+        if (string.IsNullOrWhiteSpace(r.ComprobanteUrl))
+            return NotFound(new { message = "La reserva no tiene comprobante" });
+
+        // Extraer nombre del archivo de la URL (/comprobantes/nombre.pdf → nombre.pdf)
+        var fileName = r.ComprobanteUrl.Split('/').Last();
+        var filePath = Path.Combine(_comprobantesPath, fileName);
+
+        if (!System.IO.File.Exists(filePath))
+            return NotFound(new { message = "Archivo de comprobante no encontrado" });
+
+        var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath, ct);
+        var contentType = fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) 
+            ? "application/pdf" 
+            : "image/jpeg";
+
+        return File(fileBytes, contentType, fileName);
+    }
+
     public record CambiarEstadoReservaDto(string Estado);
 
     [Authorize(Roles = "Admin,Oferente")]
