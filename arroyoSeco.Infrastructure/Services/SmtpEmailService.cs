@@ -37,7 +37,22 @@ public class SmtpEmailService : IEmailService
 
         try
         {
-            // Usar API REST de Brevo en lugar de SMTP
+            _logger.LogInformation($"Iniciando envío de correo a {toEmail} - Asunto: {subject}");
+
+            // Verificar que las opciones estén configuradas
+            if (string.IsNullOrWhiteSpace(_options.SmtpPassword))
+            {
+                _logger.LogError("API key de Brevo no está configurada (SmtpPassword vacío)");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(_options.FromEmail))
+            {
+                _logger.LogError("Email remitente no está configurado (FromEmail vacío)");
+                return false;
+            }
+
+            // Usar API REST de Brevo
             var payload = new
             {
                 sender = new { email = _options.FromEmail, name = _options.FromName },
@@ -51,8 +66,9 @@ public class SmtpEmailService : IEmailService
 
             // Agregar header de API key
             _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Add("api-key", _options.SmtpPassword); // La contraseña es la API key
+            _httpClient.DefaultRequestHeaders.Add("api-key", _options.SmtpPassword);
 
+            _logger.LogInformation("Enviando solicitud a API de Brevo...");
             var response = await _httpClient.PostAsync(
                 "https://api.brevo.com/v3/smtp/email",
                 content,
@@ -60,19 +76,19 @@ public class SmtpEmailService : IEmailService
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation($"Correo enviado a {toEmail}");
+                _logger.LogInformation($"✅ Correo enviado exitosamente a {toEmail}");
                 return true;
             }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync(ct);
-                _logger.LogError($"Error Brevo API: {response.StatusCode} - {errorContent}");
+                _logger.LogError($"❌ Error Brevo API [{response.StatusCode}]: {errorContent}");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error enviando correo a {toEmail}");
+            _logger.LogError(ex, $"❌ Excepción enviando correo a {toEmail}");
             return false;
         }
     }
