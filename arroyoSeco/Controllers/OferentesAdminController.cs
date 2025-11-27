@@ -59,9 +59,59 @@ public class OferentesAdminController : ControllerBase
             await _db.SaveChangesAsync(ct);
         }
 
-        // Notificaci�n simple
+        // Notificación en BD + Enviar correo con credenciales
+        var correoHtml = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #2c3e50; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
+        .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
+        .credentials {{ background-color: #fff; padding: 15px; border-left: 4px solid #27ae60; margin: 15px 0; }}
+        .credentials p {{ margin: 5px 0; }}
+        .auto-email {{ background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; font-size: 12px; color: #856404; }}
+        .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>¡Tu Cuenta de Oferente ha sido Creada!</h1>
+        </div>
+        <div class='content'>
+            <p>Hola {dto.Nombre},</p>
+            <p>Tu cuenta de oferente en <strong>Arroyo Seco</strong> ha sido creada por un administrador.</p>
+            
+            <div class='credentials'>
+                <p><strong>Email:</strong> {dto.Email}</p>
+                <p><strong>Contraseña:</strong> {dto.Password}</p>
+                <p><em>Por favor, cambia tu contraseña al iniciar sesión por primera vez.</em></p>
+            </div>
+            
+            <p>Puedes acceder a tu panel de control en: <a href='https://arroyosecoservices.vercel.app/login'>Inicia sesión</a></p>
+            <p>Si tienes dudas, contáctanos a través de nuestro sitio web.</p>
+            
+            <p>¡Esperamos trabajar contigo!</p>
+            
+            <div class='auto-email'>
+                <strong>⚠️ Nota:</strong> Este es un correo automático, por favor no contestes a este mensaje. No recibiremos tu respuesta. Si necesitas ayuda, contáctanos a través de nuestro sitio web.
+            </div>
+        </div>
+        <div class='footer'>
+            <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await _email.SendEmailAsync(dto.Email, "Tu Cuenta de Oferente ha sido Creada", correoHtml, ct);
+
+        // Notificación en BD
         await _noti.PushAsync(user.Id, "Cuenta de Oferente creada",
-            "Tu cuenta de oferente ha sido creada por un administrador.", "Oferente", null, ct);
+            "Tu cuenta de oferente ha sido creada por un administrador. Hemos enviado tus credenciales al correo.", "Oferente", null, ct);
 
         return CreatedAtAction(nameof(Get), new { id = user.Id }, new { user.Id, user.Email });
     }
@@ -215,6 +265,7 @@ public class OferentesAdminController : ControllerBase
         .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
         .credentials {{ background-color: #fff; padding: 15px; border-left: 4px solid #27ae60; margin: 15px 0; }}
         .credentials p {{ margin: 5px 0; }}
+        .auto-email {{ background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; font-size: 12px; color: #856404; }}
         .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
     </style>
 </head>
@@ -237,6 +288,10 @@ public class OferentesAdminController : ControllerBase
             <p>Si tienes dudas, contáctanos a través de nuestro sitio web.</p>
             
             <p>¡Esperamos trabajar contigo!</p>
+            
+            <div class='auto-email'>
+                <strong>⚠️ Nota:</strong> Este es un correo automático, por favor no contestes a este mensaje. No recibiremos tu respuesta. Si necesitas ayuda, contáctanos a través de nuestro sitio web.
+            </div>
         </div>
         <div class='footer'>
             <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>
@@ -284,6 +339,7 @@ public class OferentesAdminController : ControllerBase
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
         .header {{ background-color: #e74c3c; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
         .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
+        .auto-email {{ background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; font-size: 12px; color: #856404; }}
         .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
     </style>
 </head>
@@ -297,6 +353,10 @@ public class OferentesAdminController : ControllerBase
             <p>Lamentablemente, tu solicitud para ser oferente en Arroyo Seco ha sido <strong style='color: #e74c3c;'>RECHAZADA</strong> en esta ocasión.</p>
             <p>Puedes volver a intentar en el futuro presentando una nueva solicitud.</p>
             <p>Si tienes preguntas, no dudes en contactarnos.</p>
+            
+            <div class='auto-email'>
+                <strong>⚠️ Nota:</strong> Este es un correo automático, por favor no contestes a este mensaje. No recibiremos tu respuesta. Si necesitas ayuda, contáctanos a través de nuestro sitio web.
+            </div>
         </div>
         <div class='footer'>
             <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>

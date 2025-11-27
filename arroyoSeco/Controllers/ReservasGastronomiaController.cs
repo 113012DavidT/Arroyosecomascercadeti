@@ -295,6 +295,7 @@ public class ReservasGastronomiaController : ControllerBase
         .content {{ background-color: #ecf0f1; padding: 20px; border-radius: 0 0 5px 5px; }}
         .details {{ background-color: #fff; padding: 15px; border-left: 4px solid {color}; margin: 15px 0; }}
         .details p {{ margin: 5px 0; }}
+        .auto-email {{ background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; font-size: 12px; color: #856404; }}
         .footer {{ margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center; }}
     </style>
 </head>
@@ -315,6 +316,10 @@ public class ReservasGastronomiaController : ControllerBase
             </div>
             
             <p>Si tienes dudas, contáctanos a través de nuestro sitio web.</p>
+            
+            <div class='auto-email'>
+                <strong>⚠️ Nota:</strong> Este es un correo automático, por favor no contestes a este mensaje. No recibiremos tu respuesta. Si necesitas ayuda, contáctanos a través de nuestro sitio web.
+            </div>
         </div>
         <div class='footer'>
             <p>© 2025 Arroyo Seco. Todos los derechos reservados.</p>
