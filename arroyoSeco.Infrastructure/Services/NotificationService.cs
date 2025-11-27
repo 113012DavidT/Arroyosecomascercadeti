@@ -47,27 +47,30 @@ public class NotificationService : INotificationService
         _ctx.Notificaciones.Add(n);
         await _ctx.SaveChangesAsync(ct);
 
+        // Obtener el email ANTES de lanzar la tarea de background (mientras UserManager aún está disponible)
+        var user = await _userManager.FindByIdAsync(usuarioId);
+        var userEmail = user?.Email;
+
         // Enviar correo de forma asíncrona (sin bloquear) - usar CancellationToken.None para que no se cancele con la request
-        _ = Task.Run(async () =>
+        if (!string.IsNullOrWhiteSpace(userEmail))
         {
-            try
+            _ = Task.Run(async () =>
             {
-                var user = await _userManager.FindByIdAsync(usuarioId);
-                if (user?.Email != null)
+                try
                 {
                     await _email.SendNotificationEmailAsync(
-                        user.Email,
+                        userEmail,
                         titulo,
                         mensaje,
                         url,
                         CancellationToken.None);
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error enviando email para notificación {n.Id}");
-            }
-        }, CancellationToken.None);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error enviando email para notificación {n.Id}");
+                }
+            }, CancellationToken.None);
+        }
 
         return n.Id;
     }
