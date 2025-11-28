@@ -125,9 +125,17 @@ public class ReservasController : ControllerBase
         {
             return Conflict(new { error = "Fechas no disponibles", detalle = ex.Message });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = "Error en la solicitud", detalle = ex.Message });
+        }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = "Error interno", detalle = ex.Message });
+            Console.WriteLine($"[ReservasController.Crear] ERROR: {ex.GetType().Name} - {ex.Message}");
+            if (ex.InnerException != null)
+                Console.WriteLine($"[ReservasController.Crear] INNER: {ex.InnerException.GetType().Name} - {ex.InnerException.Message}");
+            Console.WriteLine($"[ReservasController.Crear] STACK: {ex.StackTrace}");
+            return StatusCode(500, new { error = "Error interno", detalle = ex.Message, tipo = ex.GetType().Name });
         }
     }
 
