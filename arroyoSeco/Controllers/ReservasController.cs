@@ -116,7 +116,9 @@ public class ReservasController : ControllerBase
 
         try
         {
+            Console.WriteLine($"[ReservasController.Crear] Iniciando creación de reserva. AlojamientoId={cmd.AlojamientoId}, Usuario={_current.UserId}");
             var id = await _crear.Handle(cmd, ct);
+            Console.WriteLine($"[ReservasController.Crear] Reserva creada exitosamente. ID={id}");
             var r = await _db.Reservas.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
             if (r is null) return Created(nameof(Crear), new { Id = id });
             return CreatedAtAction(nameof(GetByFolio), new { folio = r.Folio }, new { r.Id, r.Folio, r.Estado });
@@ -133,9 +135,15 @@ public class ReservasController : ControllerBase
         {
             Console.WriteLine($"[ReservasController.Crear] ERROR: {ex.GetType().Name} - {ex.Message}");
             if (ex.InnerException != null)
+            {
                 Console.WriteLine($"[ReservasController.Crear] INNER: {ex.InnerException.GetType().Name} - {ex.InnerException.Message}");
+                if (ex.InnerException.InnerException != null)
+                    Console.WriteLine($"[ReservasController.Crear] INNER2: {ex.InnerException.InnerException.GetType().Name} - {ex.InnerException.InnerException.Message}");
+            }
             Console.WriteLine($"[ReservasController.Crear] STACK: {ex.StackTrace}");
-            return StatusCode(500, new { error = "Error interno", detalle = ex.Message, tipo = ex.GetType().Name });
+            
+            var errorMessage = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, new { error = "Error interno", detalle = errorMessage, tipo = ex.GetType().Name });
         }
     }
 
